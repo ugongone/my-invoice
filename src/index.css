@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-area {
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  input, textarea {
+    border: none !important;
+    background: transparent !important;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Meiryo", sans-serif;
+}
