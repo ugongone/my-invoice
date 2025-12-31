@@ -119,15 +119,18 @@ const App = () => {
   // --- UIコンポーネント ---
 
   // 編集可能なテキスト入力エリア（印刷時は枠線が消える）
-  const EditableInput = ({ value, onChange, className = "", placeholder = "", type = "text", align = "left" }) => (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={`bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-400 focus:bg-white focus:outline-none rounded px-1 w-full transition-colors print:border-none print:p-0 ${className} text-${align}`}
-    />
-  );
+  const EditableInput = ({ value, onChange, className = "", placeholder = "", type = "text", align = "left" }) => {
+    const alignClass = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+    return (
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-400 focus:bg-white focus:outline-none rounded px-1 w-full transition-colors print:border-none print:p-0 ${className} ${alignClass}`}
+      />
+    );
+  };
 
   const EditableTextarea = ({ value, onChange, className = "", placeholder = "" }) => (
     <textarea
@@ -144,6 +147,21 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-4 print:p-0 print:bg-white font-sans text-gray-800">
 
+      {/* 印刷用スタイル（ブラウザの余白やヘッダーフッターを強制削除） */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body {
+            margin: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+        }
+      `}</style>
+
       {/* 操作バー（印刷時は非表示） */}
       <div className="max-w-[210mm] mx-auto mb-6 flex justify-between items-center print:hidden">
         <h1 className="text-xl font-bold text-gray-700">Simple Invoice</h1>
@@ -158,7 +176,12 @@ const App = () => {
       </div>
 
       {/* A4用紙エリア */}
-      <div className="max-w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg p-[15mm] print:shadow-none print:w-full print:max-w-none print:p-0 print:m-0 relative box-border">
+      {/* print:p-[15mm] -> 印刷時も画面と同じ余白を確保
+          print:w-[210mm] -> A4幅に固定
+          print:h-[297mm] -> A4高さに固定
+          overflow-hidden -> はみ出し防止
+      */}
+      <div className="max-w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg p-[15mm] print:shadow-none print:w-[210mm] print:min-h-[297mm] print:p-[15mm] print:m-0 relative box-border overflow-hidden">
 
         {/* ヘッダー：タイトルとNo/日付 */}
         <div className="flex justify-between items-start mb-12 border-b-2 border-gray-800 pb-4">
@@ -237,7 +260,7 @@ const App = () => {
               placeholder="住所を入力"
               align="right"
             />
-             <div className="flex justify-end items-center text-gray-600 mb-4">
+             <div className={`flex justify-end items-center text-gray-600 mb-4 ${!data.senderRegNum ? 'print:hidden' : ''}`}>
               <span className="mr-2 whitespace-nowrap">登録番号:</span>
               <EditableInput
                 value={data.senderRegNum}
@@ -372,7 +395,7 @@ const App = () => {
         </div>
 
         {/* 備考欄 */}
-        <div className="mt-12 pt-4 border-t border-gray-200">
+        <div className={`mt-12 pt-4 border-t border-gray-200 ${!data.remarks ? 'print:hidden' : ''}`}>
           <div className="text-xs text-gray-500 mb-1">備考</div>
           <EditableTextarea
             value={data.remarks || ''}
