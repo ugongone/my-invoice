@@ -3,6 +3,32 @@ import { Printer, Plus, Trash2, RotateCcw } from 'lucide-react';
 
 const STORAGE_KEY = 'simple_invoice_v1';
 
+// --- UIコンポーネント（Appの外部で定義して再レンダリング時の再作成を防ぐ） ---
+
+// 編集可能なテキスト入力エリア（印刷時は枠線が消える）
+const EditableInput = ({ value, onChange, className = "", placeholder = "", type = "text", align = "left" }) => {
+  const alignClass = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-400 focus:bg-white focus:outline-none rounded px-1 w-full transition-colors print:border-none print:p-0 ${className} ${alignClass}`}
+    />
+  );
+};
+
+const EditableTextarea = ({ value, onChange, className = "", placeholder = "" }) => (
+  <textarea
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    placeholder={placeholder}
+    rows={3}
+    className={`bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-400 focus:bg-white focus:outline-none rounded px-1 w-full resize-none transition-colors print:border-none print:resize-none print:p-0 ${className}`}
+  />
+);
+
 const App = () => {
   // 今日の日付を取得
   const today = new Date();
@@ -115,32 +141,6 @@ const App = () => {
       });
     }
   };
-
-  // --- UIコンポーネント ---
-
-  // 編集可能なテキスト入力エリア（印刷時は枠線が消える）
-  const EditableInput = ({ value, onChange, className = "", placeholder = "", type = "text", align = "left" }) => {
-    const alignClass = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
-    return (
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={`bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-400 focus:bg-white focus:outline-none rounded px-1 w-full transition-colors print:border-none print:p-0 ${className} ${alignClass}`}
-      />
-    );
-  };
-
-  const EditableTextarea = ({ value, onChange, className = "", placeholder = "" }) => (
-    <textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={3}
-      className={`bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-400 focus:bg-white focus:outline-none rounded px-1 w-full resize-none transition-colors print:border-none print:resize-none print:p-0 ${className}`}
-    />
-  );
 
   if (!isLoaded) return <div className="p-10 text-center">Loading...</div>;
 
