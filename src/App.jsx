@@ -55,7 +55,6 @@ const App = () => {
     clientName: '株式会社 クライアント',
 
     // 計算設定
-    taxRate: 10,
     enableWithholding: false, // 源泉徴収の有無
 
     // 明細
@@ -89,12 +88,11 @@ const App = () => {
 
   // --- 計算ロジック ---
   const subtotal = data.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const taxAmount = Math.floor(subtotal * (data.taxRate / 100));
 
   // 源泉徴収税額（10.21%で計算：100万円以下を想定した簡易計算）
   const withholdingAmount = data.enableWithholding ? Math.floor(subtotal * 0.1021) : 0;
 
-  const totalAmount = subtotal + taxAmount - withholdingAmount;
+  const totalAmount = subtotal - withholdingAmount;
 
   // --- イベントハンドラ ---
   const handleChange = (key, value) => {
@@ -362,11 +360,6 @@ const App = () => {
             <div className="flex justify-between mb-2 text-sm">
               <span className="text-gray-600">小計</span>
               <span className="font-mono">¥{subtotal.toLocaleString()}</span>
-            </div>
-
-            <div className="flex justify-between mb-2 text-sm items-center">
-              <span className="text-gray-600">消費税 (10%)</span>
-              <span className="font-mono">¥{taxAmount.toLocaleString()}</span>
             </div>
 
             {/* 源泉徴収の設定（印刷時は金額のみ、または非表示） */}
