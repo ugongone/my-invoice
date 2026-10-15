@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Printer, Plus, Trash2, RotateCcw } from 'lucide-react';
+import { calculateInvoice } from './invoice';
 
 const STORAGE_KEY = 'simple_invoice_v1';
 
@@ -55,6 +56,7 @@ const App = () => {
     clientName: '株式会社 クライアント',
 
     // 計算設定
+    taxMode: 'exclusive', // 入力単価の税区分
     enableWithholding: false, // 源泉徴収の有無
 
     // 明細
@@ -64,35 +66,29 @@ const App = () => {
   };
 
   // --- State管理 ---
-  const [data, setData] = useState(initialInvoiceData);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [data, setData] = useState(() => {
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        // 税区分のない既存データは、従来の入力金額を保つため税込として復元する。
+        return { ...initialInvoiceData, taxMode: 'inclusive', ...JSON.parse(savedData) };
+      }
+    } catch (e) {
+      console.error('保存データの読み込みに失敗しました', e);
+    }
+    return initialInvoiceData;
+  });
 
   // --- 永続化（LocalStorage） ---
   useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      try {
-        setData(JSON.parse(savedData));
-      } catch (e) {
-        console.error("Failed to load data", e);
-      }
-    }
-    setIsLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-  }, [data, isLoaded]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }, [data]);
 
   // --- 計算ロジック ---
-  const subtotal = data.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-
-  // 源泉徴収税額（10.21%で計算：100万円以下を想定した簡易計算）
-  const withholdingAmount = data.enableWithholding ? Math.floor(subtotal * 0.1021) : 0;
-
-  const totalAmount = subtotal - withholdingAmount;
+  const { subtotal, taxAmount, withholdingAmount, totalAmount } = calculateInvoice(
+    data.items, data.taxMode, data.enableWithholding
+  );
+  const taxLabel = data.taxMode === 'inclusive' ? '税込' : '税抜';
 
   // --- イベントハンドラ ---
   const handleChange = (key, value) => {
@@ -139,8 +135,6 @@ const App = () => {
       });
     }
   };
-
-  if (!isLoaded) return <div className="p-10 text-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 print:p-0 print:bg-white font-sans text-gray-800">
@@ -283,6 +277,20 @@ const App = () => {
 
         {/* 明細テーブル */}
         <div className="mb-8">
+          <div className="mb-4 flex flex-wrap items-center gap-3 text-sm print:hidden">
+            <label htmlFor="tax-mode" className="font-bold text-gray-600">入力単価の税区分</label>
+            <select
+              id="tax-mode"
+              value={data.taxMode}
+              onChange={(e) => handleChange('taxMode', e.target.value)}
+              className="rounded border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:border-blue-400"
+            >
+              <option value="exclusive">税抜（消費税10%を加算）</option>
+              <option value="inclusive">税込（消費税10%を含む）</option>
+            </select>
+            <span className="text-xs text-gray-500">切り替えても入力単価は変わりません。</span>
+          </div>
+          <div className="mb-2 text-right text-xs text-gray-500">単価・金額は{taxLabel}表示（消費税率10%）</div>
           <div className="flex border-b-2 border-gray-800 pb-2 mb-2 text-sm font-bold text-gray-600">
             <div className="flex-grow pl-1">内容</div>
             <div className="w-16 text-center">数量</div>
@@ -358,8 +366,12 @@ const App = () => {
         <div className="flex justify-end">
           <div className="w-64">
             <div className="flex justify-between mb-2 text-sm">
-              <span className="text-gray-600">小計</span>
+              <span className="text-gray-600">小計（{taxLabel}）</span>
               <span className="font-mono">¥{subtotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between mb-2 text-sm">
+              <span className="text-gray-600">{data.taxMode === 'inclusive' ? 'うち消費税（10%）' : '消費税（10%）'}</span>
+              <span className="font-mono">¥{taxAmount.toLocaleString()}</span>
             </div>
 
             {/* 源泉徴収の設定（印刷時は金額のみ、または非表示） */}
